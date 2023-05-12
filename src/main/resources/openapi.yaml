@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: rogier@codegorilla.nl
+  description: Dutch Student Housing version 1
+  title: Dutch Student Housing
+  version: 0.1.0
+externalDocs:
+  description: git
+  url: https://github.com/orgs/DutchStudentHousing
+servers:
+- url: /
+tags:
+- description: Property listings and management
+  name: property
+- description: Receive and send messages
+  name: message
+- description: Operations about user
+  name: user
+paths:
+  /properties:
+    get:
+      description: Get properties with optional filters
+      operationId: getProperties
+      parameters:
+      - description: City where the property is
+        example: Groningen
+        explode: false
+        in: query
+        name: city
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Latitude
+        explode: false
+        in: query
+        name: lat
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - description: Longitude
+        explode: false
+        in: query
+        name: long
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - description: Distance in kilometers from known point
+        explode: false
+        in: query
+        name: distance
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - allowEmptyValue: true
+        description: Items per page
+        explode: false
+        in: query
+        name: perPage
+        required: false
+        schema:
+          format: int32
+          type: integer
+        style: form
+      - allowEmptyValue: true
+        description: Page number (allows computed range on server side along with
+          perPage parameter)
+        explode: false
+        in: query
+        name: page
+        required: false
+        schema:
+          format: int32
+          type: integer
+        style: form
+      - description: Value to order listed items by
+        explode: false
+        in: query
+        name: orderBy
+        required: false
+        schema:
+          default: price
+          enum:
+          - price
+          - pricepersqm
+          type: string
+        style: form
+      - description: Minimum price
+        explode: false
+        in: query
+        name: min
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      - description: Maximum price
+        explode: false
+        in: query
+        name: max
+        required: false
+        schema:
+          format: float
+          type: number
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Properties'
+            text/csv:
+              schema:
+                type: string
+          description: Successful operation
+        "400":
+          description: Invalid paramters
+        "404":
+          description: No properties found for given parameters
+        "401":
+          description: Unauthorized to view properties (not yet logged in?)
+      security:
+      - dsh_auth:
+        - read:properties
+      summary: Get properties with optional filters
+      tags:
+      - property
+      x-accepts: application/json
+      x-tags:
+      - tag: property
+  /property:
+    post:
+      description: Add a new property listing
+      operationId: addProperty
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Property'
+        description: Create a new property listing
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+            text/csv:
+              schema:
+                type: string
+          description: Successful operation
+        "405":
+          description: Invalid input
+      security:
+      - dsh_auth:
+        - write:properties
+        - read:properties
+      summary: Add a new property listing
+      tags:
+      - property
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: property
+    put:
+      description: Update an existing property by Id
+      operationId: updateProperty
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Property'
+        description: Update an existent property listing
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Property'
+            text/csv:
+              schema:
+                type: string
+          description: Successful operation
+        "400":
+          description: Invalid ID supplied
+        "404":
+          description: Property not found
+        "405":
+          description: Validation exception
+      security:
+      - dsh_auth:
+        - write:properties
+        - read:properties
+      summary: Update an existing property
+      tags:
+      - property
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: property
+  /account:
+    post:
+      operationId: addAccount
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+        description: Create a new account
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+            text/csv:
+              schema:
+                type: string
+          description: Successfully created a new account
+        "405":
+          description: Invalid input
+      security:
+      - dsh_auth:
+        - read:accounts
+        - write:accounts
+      summary: Create a new account
+      tags:
+      - account
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: account
+  /account/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/login_request'
+        description: Log in to account
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/login_200_response'
+          description: Successfully logged in
+        "404":
+          description: Account with email not found
+        "400":
+          description: Incorrect password
+      summary: Log in to account
+      tags:
+      - account
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: account
+  /account/logout:
+    post:
+      operationId: logout
+      responses:
+        "204":
+          description: Successfully logged out
+        "403":
+          description: Not logged in
+      summary: Log out of account
+      tags:
+      - account
+      x-accepts: application/json
+      x-tags:
+      - tag: account
+  /message:
+    post:
+      operationId: postMessage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postMessage_request'
+        description: Message
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: Successfully sent message
+        "400":
+          description: Incorrect message format
+        "404":
+          description: Receiver not found
+      summary: Send a message
+      tags:
+      - message
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+      - tag: message
+  /messages:
+    get:
+      operationId: getMessages
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Message'
+                type: array
+          description: Successfully received messages
+        "404":
+          description: No messages found
+        "403":
+          description: Not logged in
+      summary: Get all messages associated with currently logged in account
+      tags:
+      - message
+      x-accepts: application/json
+      x-tags:
+      - tag: message
+components:
+  schemas:
+    Property:
+      example:
+        img: img
+        city: city
+        date_published: 2000-01-23T04:56:07.000+00:00
+        name: name
+        id: id
+        rent: 1.4658129
+        postal_code: postal_code
+        type: Room
+        lat: 0.8008282
+        long: 6.0274563
+        sqm: 5
+        rent_incl: true
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+        lat:
+          format: float
+          type: number
+        long:
+          format: float
+          type: number
+        img:
+          type: string
+        date_published:
+          format: date-time
+          type: string
+        rent:
+          format: float
+          type: number
+        rent_incl:
+          type: boolean
+        sqm:
+          format: int32
+          type: integer
+        postal_code:
+          type: string
+        type:
+          default: Room
+          enum:
+          - Room
+          - Apartment
+          - Studio
+          - Other
+          type: string
+      type: object
+    Properties:
+      items:
+        $ref: '#/components/schemas/Property'
+      type: array
+    Account:
+      example:
+        id: 0
+        email: email
+      properties:
+        id:
+          format: int64
+          type: integer
+        email:
+          format: email
+          type: string
+      type: object
+    Message:
+      example:
+        property:
+          name: name
+          id: id
+        from:
+          name: name
+          id: 0
+        to:
+          name: name
+          id: 0
+        content: content
+      properties:
+        from:
+          $ref: '#/components/schemas/Message_from'
+        to:
+          $ref: '#/components/schemas/Message_from'
+        content:
+          type: string
+        property:
+          $ref: '#/components/schemas/Message_property'
+      type: object
+    login_request:
+      properties:
+        email:
+          format: email
+          type: string
+        password:
+          format: password
+          type: string
+      type: object
+    login_200_response:
+      example:
+        id: 0
+      properties:
+        id:
+          format: int64
+          type: integer
+      type: object
+    postMessage_request:
+      properties:
+        recv_id:
+          format: int64
+          type: integer
+        prop_id:
+          type: string
+        message:
+          type: string
+      type: object
+    Message_from:
+      example:
+        name: name
+        id: 0
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+      type: object
+    Message_property:
+      example:
+        name: name
+        id: id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      type: object
+  securitySchemes:
+    dsh_auth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
